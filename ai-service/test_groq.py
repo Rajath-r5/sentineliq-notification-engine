@@ -2,36 +2,34 @@ import os
 from groq import Groq
 from dotenv import load_dotenv
 
-# Load the .env file
 load_dotenv()
 
-# Read the API key
-api_key = os.getenv("GROQ_API_KEY")
+client = Groq(api_key=os.getenv("GROQ_API_KEY"))
 
-if not api_key:
-    print("ERROR: GROQ_API_KEY not found in .env file")
-    exit(1)
-
-# Create Groq client
-client = Groq(api_key=api_key)
-
-# Make a test API call
-try:
+def test_prompt(input_text):
     response = client.chat.completions.create(
         model="llama-3.3-70b-versatile",
         messages=[
             {
                 "role": "user",
-                "content": "Say hello and confirm you are working."
+                "content": f"You are a helpful assistant for a notification engine system. Describe the following item clearly and professionally. Item: {input_text}"
             }
         ],
         temperature=0.3,
-        max_tokens=100
+        max_tokens=200
     )
+    return response.choices[0].message.content
 
-    print("SUCCESS — Groq API is working!")
-    print("Model response:", response.choices[0].message.content)
+# Test with 5 inputs
+test_inputs = [
+    "Server CPU usage exceeded 90%",
+    "New user registered successfully",
+    "Payment transaction failed",
+    "Database backup completed",
+    "API response time is slow"
+]
 
-except Exception as e:
-    print("FAILED — Error calling Groq API:")
-    print(str(e))
+for i, input_text in enumerate(test_inputs, 1):
+    print(f"\n--- Test {i} ---")
+    print(f"Input: {input_text}")
+    print(f"Output: {test_prompt(input_text)}")

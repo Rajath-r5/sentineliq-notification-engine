@@ -1,36 +1,70 @@
-from flask import Flask, jsonify
-from flask_limiter import Limiter
-from flask_limiter.util import get_remote_address
+from flask import Flask
+from dotenv import load_dotenv
+import os
+import time
+
+load_dotenv()
 
 app = Flask(__name__)
 
-# Rate limiter — blocks any IP exceeding 30 requests per minute
-limiter = Limiter(
-    get_remote_address,
-    app=app,
-    default_limits=["30 per minute"],
-    storage_uri="memory://"
-)
+# Track server start time
+START_TIME = time.time()
 
-# Import routes (we will add these in Day 3+)
-# from routes import describe, recommend, report
+# Preload sentence-transformers at startup
+print("Loading sentence-transformers model...")
+try:
+    from sentence_transformers import SentenceTransformer
+    embedding_model = SentenceTransformer('all-MiniLM-L6-v2')
+    print("Sentence-transformers model loaded successfully!")
+except Exception as e:
+    print(f"Warning: Could not load sentence-transformers: {e}")
+    embedding_model = None
+
+# Security Headers Middleware
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate'
+    return response
+
+# Register blueprints
+from routes.describe import describe_bp
+from routes.recommend import recommend_bp
+from routes.generate_report import generate_report_bp
+
+app.register_blueprint(describe_bp)
+app.register_blueprint(recommend_bp)
+app.register_blueprint(generate_report_bp)
 
 @app.route("/health", methods=["GET"])
 def health():
-    return jsonify({
-        "status": "ok",
-        "service": "AI Service — Sentinel Notification Engine",
-        "version": "1.0"
-    }), 200
+    uptime_seconds = int(time.time() - START_TIME)
+    uptime_minutes = uptime_seconds // 60
+    uptime_hours = uptime_minutes // 60
 
-# Handle rate limit exceeded
-@app.errorhandler(429)
-def rate_limit_exceeded(e):
-    return jsonify({
-        "error": "Rate limit exceeded",
-        "message": "Maximum 30 requests per minute allowed",
-        "status": 429
-    }), 429
+    return {
+        "status": "ok",
+        "model": "llama-3.3-70b-versatile",
+        "message": "AI service is running",
+        "embedding_model": "all-MiniLM-L6-v2" if embedding_model else "not loaded",
+        "uptime": {
+            "seconds": uptime_seconds,
+            "minutes": uptime_minutes,
+            "hours": uptime_hours
+        },
+        "endpoints": [
+            "/health",
+            "/describe",
+            "/recommend",
+            "/generate-report"
+        ],
+        "version": "1.0.0"
+    }, 200
 
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=True)
