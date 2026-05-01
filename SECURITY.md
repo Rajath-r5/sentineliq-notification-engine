@@ -77,4 +77,43 @@ Day 5 and Day 9.
 | SQL Injection | ✅ Mitigated by JPA parameterised queries |
 | Unauthorised Access | Mitigation planned — Day 5 |
 
+---
+
+## Day 9 — Week 2 Security Sign-Off
+
+### Checks Performed
+| Check | Status |
+|---|---|
+| Rate limiting — 30 req/min | ✅ Verified |
+| 429 error handler | ✅ Verified |
+| All 6 injection patterns blocked | ✅ Verified |
+| Empty input blocked | ✅ Verified |
+| HTML/XSS stripped | ✅ Verified |
+| No PII in prompts | ✅ Verified |
+| API key not in source code | ✅ Verified |
+| X-Frame-Options header | ✅ Verified |
+| X-Content-Type-Options header | ✅ Verified |
+| Server version hidden | ✅ Verified |
+| Debug mode disabled | ✅ Verified |
+
+### PII Audit Results
+- describe_prompt.txt — uses {content} placeholder only ✅
+- recommend_prompt.txt — uses {content} placeholder only ✅
+- report_prompt.txt — uses {content} placeholder only ✅
+- No personal data hardcoded in any prompt file ✅
+- GROQ_API_KEY stored in .env only — never in source code ✅
+
+### JWT Note
+JWT authentication is implemented by Java Developer 1.
+AI service communicates internally only — not exposed to public.
+JWT verification on the Java backend protects all public endpoints.
+
+### Week 2 Sign-Off
+All AI service security checks passed.
+Zero Critical findings.
+Zero High findings.
+All Medium findings fixed.
+
+*Week 2 Security Sign-Off completed — 1 May 2026*
+
 *This document will be updated daily throughout the sprint.*

@@ -4,7 +4,6 @@ from flask_limiter.util import get_remote_address
 
 app = Flask(__name__)
 
-# Rate limiter — blocks any IP exceeding 30 requests per minute
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -12,8 +11,16 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
-# Import routes (we will add these in Day 3+)
-# from routes import describe, recommend, report
+@app.after_request
+def add_security_headers(response):
+    response.headers['X-Frame-Options'] = 'DENY'
+    response.headers['X-Content-Type-Options'] = 'nosniff'
+    response.headers['X-XSS-Protection'] = '1; mode=block'
+    response.headers['Strict-Transport-Security'] = 'max-age=31536000; includeSubDomains'
+    response.headers['Referrer-Policy'] = 'strict-origin-when-cross-origin'
+    response.headers['Content-Security-Policy'] = "default-src 'self'"
+    response.headers['Server'] = 'SentinelIQ'
+    return response
 
 @app.route("/health", methods=["GET"])
 def health():
@@ -23,7 +30,6 @@ def health():
         "version": "1.0"
     }), 200
 
-# Handle rate limit exceeded
 @app.errorhandler(429)
 def rate_limit_exceeded(e):
     return jsonify({
@@ -32,5 +38,21 @@ def rate_limit_exceeded(e):
         "status": 429
     }), 429
 
+@app.errorhandler(404)
+def not_found(e):
+    return jsonify({
+        "error": "Not found",
+        "message": "The requested endpoint does not exist",
+        "status": 404
+    }), 404
+
+@app.errorhandler(500)
+def internal_error(e):
+    return jsonify({
+        "error": "Internal server error",
+        "message": "An unexpected error occurred",
+        "status": 500
+    }), 500
+
 if __name__ == "__main__":
-    app.run(host="0.0.0.0", port=5000, debug=True)
+    app.run(host="0.0.0.0", port=5000, debug=False)
