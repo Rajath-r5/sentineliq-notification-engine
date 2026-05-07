@@ -1,0 +1,22 @@
+version: '3.8'
+
+services:
+
+  ai-service:
+    build: ./ai-service
+    container_name: sentinel-ai-service
+    ports:
+      - "5000:5000"
+    env_file:
+      - ./ai-service/.env
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:5000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    networks:
+      - sentinel-network
+
+networks:
+  sentinel-network:
+    driver: bridge

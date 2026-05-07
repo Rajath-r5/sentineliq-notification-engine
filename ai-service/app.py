@@ -2,8 +2,20 @@ from flask import Flask, jsonify
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
 
+# Import route blueprints
+from routes.describe import describe_bp
+from routes.recommend import recommend_bp
+from routes.generate_report import report_bp
+
+# Create Flask app
 app = Flask(__name__)
 
+# Register all routes
+app.register_blueprint(describe_bp)
+app.register_blueprint(recommend_bp)
+app.register_blueprint(report_bp)
+
+# Rate limiter
 limiter = Limiter(
     get_remote_address,
     app=app,
@@ -11,6 +23,7 @@ limiter = Limiter(
     storage_uri="memory://"
 )
 
+# Security headers
 @app.after_request
 def add_security_headers(response):
     response.headers['X-Frame-Options'] = 'DENY'
@@ -22,6 +35,7 @@ def add_security_headers(response):
     response.headers['Server'] = 'SentinelIQ'
     return response
 
+# Health endpoint
 @app.route("/health", methods=["GET"])
 def health():
     return jsonify({
@@ -30,6 +44,7 @@ def health():
         "version": "1.0"
     }), 200
 
+# 429 Rate limit handler
 @app.errorhandler(429)
 def rate_limit_exceeded(e):
     return jsonify({
@@ -38,6 +53,7 @@ def rate_limit_exceeded(e):
         "status": 429
     }), 429
 
+# 404 handler
 @app.errorhandler(404)
 def not_found(e):
     return jsonify({
@@ -46,6 +62,7 @@ def not_found(e):
         "status": 404
     }), 404
 
+# 500 handler
 @app.errorhandler(500)
 def internal_error(e):
     return jsonify({
@@ -54,5 +71,6 @@ def internal_error(e):
         "status": 500
     }), 500
 
+# Run app
 if __name__ == "__main__":
     app.run(host="0.0.0.0", port=5000, debug=False)

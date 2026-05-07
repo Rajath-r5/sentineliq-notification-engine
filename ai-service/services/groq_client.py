@@ -25,22 +25,27 @@ def get_client():
 def call_groq(messages, temperature=0.3, max_tokens=1000, retries=3):
     client = get_client()
     attempt = 0
+
     while attempt < retries:
         try:
             logger.info(f"Calling Groq API — attempt {attempt + 1} of {retries}")
+
             response = client.chat.completions.create(
                 model="llama-3.3-70b-versatile",
                 messages=messages,
                 temperature=temperature,
                 max_tokens=max_tokens
             )
+
             result = response.choices[0].message.content
             logger.info("Groq API call successful")
             return result
+
         except Exception as e:
             attempt += 1
             wait_time = 2 ** attempt
             logger.error(f"Groq API error on attempt {attempt}: {str(e)}")
+
             if attempt < retries:
                 logger.info(f"Retrying in {wait_time} seconds...")
                 time.sleep(wait_time)
@@ -59,6 +64,7 @@ def parse_json_response(raw_response):
         if cleaned.endswith("```"):
             cleaned = cleaned[:-3]
         return json.loads(cleaned.strip())
+
     except (json.JSONDecodeError, AttributeError) as e:
         logger.error(f"JSON parsing failed: {str(e)}")
         logger.error(f"Raw response was: {raw_response}")
