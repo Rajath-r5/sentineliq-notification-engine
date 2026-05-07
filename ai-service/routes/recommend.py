@@ -1,4 +1,5 @@
 import json
+
 from flask import Blueprint, request, jsonify
 from services.groq_client import call_groq
 
@@ -46,14 +47,14 @@ def recommend():
             "is_fallback": True
         }), 500
 
-   try:
-    parsed_response = json.loads(response)
+    try:
+        parsed_response = json.loads(response)
 
-    return jsonify({
-        "recommendations": parsed_response
-    }), 200
+        return jsonify({
+            "recommendations": parsed_response
+        }), 200
 
-except Exception:
-    return jsonify({
-        "recommendations": response
-    }), 200
+    except Exception:
+        return jsonify({
+            "recommendations": response
+        }), 200
